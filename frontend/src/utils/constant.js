@@ -1,5 +1,5 @@
 // Add this to your constants file
-export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 export const BASE_URL = import.meta.env.VITE_BACKEND_URL ;
 export const USER_API_END_POINT = `${BASE_URL}/v1/user`;

@@ -7,7 +7,7 @@ import cloudinary from "../utils/cloudinary.js";
 export const register = async (req, res) => {
     try {
         const { fullname, email, phoneNumber, password, role } = req.body;
-         
+
         if (!fullname || !email || !phoneNumber || !password || !role) {
             return res.status(400).json({
                 message: "Something is missing",
@@ -15,9 +15,16 @@ export const register = async (req, res) => {
             });
         };
 
-        const file = req.file;
-        const fileUri = getDataUri(file);
-        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+        let profilePhoto = "";
+        if (req.file) {
+            try {
+                const fileUri = getDataUri(req.file);
+                const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+                profilePhoto = cloudResponse.secure_url;
+            } catch (uploadError) {
+                console.warn("Cloudinary upload skipped/failed:", uploadError.message);
+            }
+        }
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -36,7 +43,7 @@ export const register = async (req, res) => {
             password: hashedPassword,
             role,
             profile: {
-                profilePhoto: cloudResponse.secure_url,
+                profilePhoto,
             }
         });
 
@@ -57,11 +64,11 @@ export const register = async (req, res) => {
         const token = await jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
 
         return res.status(201)
-            .cookie("token", token, { 
-                maxAge: 1 * 24 * 60 * 60 * 1000, 
-                httpOnly: false, 
+            .cookie("token", token, {
+                maxAge: 1 * 24 * 60 * 60 * 1000,
+                httpOnly: true, // Fix for Authentication Cookie Is Readable by JavaScript
                 sameSite: 'none',
-                secure: true 
+                secure: process.env.NODE_ENV === "production"
             })
             .json({
                 message: "Account created successfully.",
@@ -80,7 +87,7 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        
+
         if (!email || !password) {
             return res.status(400).json({
                 message: "Please provide both email and password",
@@ -119,11 +126,11 @@ export const login = async (req, res) => {
         }
 
         return res.status(200)
-            .cookie("token", token, { 
-                maxAge: 1 * 24 * 60 * 60 * 1000, 
-                httpOnly: false, 
+            .cookie("token", token, {
+                maxAge: 1 * 24 * 60 * 60 * 1000,
+                httpOnly: true, // Fix for V1: Authentication Cookie Is Readable by JavaScript
                 sameSite: 'none',
-                secure: true 
+                secure: process.env.NODE_ENV === "production"
             })
             .json({
                 message: `Welcome back ${user.fullname}`,
@@ -155,7 +162,7 @@ export const logout = async (req, res) => {
 export const updateProfile = async (req, res) => {
     try {
         const { fullname, email, phoneNumber, bio, skills } = req.body;
-        
+
         const file = req.file;
         let cloudResponse;
 
