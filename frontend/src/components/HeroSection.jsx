@@ -92,7 +92,7 @@ const ActionCard = ({ icon: Icon, title, description, color, link, className }) 
       <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 via-purple-100/50 to-pink-100/50 dark:from-blue-900/20 dark:via-purple-900/20 dark:to-pink-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" />
       
       {/* Card Content */}
-      <div className="relative p-8 backdrop-blur-sm rounded-2xl border border-white/20">
+      <div className="relative p-8 rounded-2xl border border-white/20">
         {/* Icon Container with Gradient */}
         <div className={`relative w-16 h-16 ${color} rounded-2xl overflow-hidden mb-6 group-hover:scale-110 transition-transform duration-300`}>
           <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent" />
@@ -132,7 +132,7 @@ const HeroSection = () => {
   ];
 
   return (
-    <div className="relative min-h-[90vh] overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="relative min-h-[90vh] overflow-hidden">
       {/* Background SVG Shapes */}
       <BgShape1 />
       <BgShape2 />
