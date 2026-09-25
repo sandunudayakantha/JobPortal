@@ -4,6 +4,16 @@ import jwt from "jsonwebtoken";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const getTokenCookieOptions = () => ({
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isProduction,
+    path: "/",
+    maxAge: 24 * 60 * 60 * 1000,
+});
+
 export const register = async (req, res) => {
     try {
         const { fullname, email, phoneNumber, password, role } = req.body;
@@ -64,12 +74,7 @@ export const register = async (req, res) => {
         const token = await jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
 
         return res.status(201)
-            .cookie("token", token, {
-                maxAge: 1 * 24 * 60 * 60 * 1000,
-                httpOnly: true, // Fix for Authentication Cookie Is Readable by JavaScript
-                sameSite: 'none',
-                secure: process.env.NODE_ENV === "production"
-            })
+            .cookie("token", token, getTokenCookieOptions())
             .json({
                 message: "Account created successfully.",
                 user: userResponse,
@@ -126,12 +131,7 @@ export const login = async (req, res) => {
         }
 
         return res.status(200)
-            .cookie("token", token, {
-                maxAge: 1 * 24 * 60 * 60 * 1000,
-                httpOnly: true, // Fix for V1: Authentication Cookie Is Readable by JavaScript
-                sameSite: 'none',
-                secure: process.env.NODE_ENV === "production"
-            })
+            .cookie("token", token, getTokenCookieOptions())
             .json({
                 message: `Welcome back ${user.fullname}`,
                 user,
@@ -147,10 +147,17 @@ export const login = async (req, res) => {
 }
 export const logout = async (req, res) => {
     try {
-        return res.status(200).cookie("token", "", { maxAge: 0 }).json({
-            message: "Logged out successfully.",
-            success: true
-        })
+        return res.status(200)
+            .clearCookie("token", {
+                httpOnly: true,
+                sameSite: "lax",
+                secure: isProduction,
+                path: "/",
+            })
+            .json({
+                message: "Logged out successfully.",
+                success: true
+            });
     } catch (error) {
         console.log(error);
     }
