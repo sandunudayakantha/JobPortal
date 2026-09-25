@@ -3,6 +3,10 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
+//Google OAuth/OpenID Connect Implementation
+import { OAuth2Client } from "google-auth-library";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const register = async (req, res) => {
     try {
@@ -227,3 +231,65 @@ export const updateProfile = async (req, res) => {
     }
 };
 
+//Google OAuth/OpenID Connect Implementation
+export const googleLogin = async (req, res) => {
+    try {
+        const { credential } = req.body;
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const email = payload.email;
+        const fullname = payload.name;
+        const profilePhoto = payload.picture;
+
+        let user = await User.findOne({ email });
+        if (!user) {
+            // Create a new user for Google login
+            const randomPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
+            user = await User.create({
+                fullname,
+                email,
+                phoneNumber: 0,
+                password: randomPassword,
+                role: 'student',
+                profile: {
+                    profilePhoto
+                }
+            });
+        }
+
+        const tokenData = { userId: user._id };
+        const token = await jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+        const userResponse = {
+            _id: user._id,
+            fullname: user.fullname,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            role: user.role,
+            profile: user.profile
+        };
+
+        return res.status(200)
+            .cookie("token", token, {
+                maxAge: 1 * 24 * 60 * 60 * 1000,
+                httpOnly: true,
+                sameSite: 'none',
+                secure: process.env.NODE_ENV === "production"
+            })
+            .json({
+                message: `Welcome back ${userResponse.fullname}`,
+                user: userResponse,
+                success: true
+            });
+
+    } catch (error) {
+        console.error('Google login error:', error);
+        return res.status(500).json({
+            message: "Internal server error during Google login",
+            success: false
+        });
+    }
+};
