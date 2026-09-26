@@ -10,9 +10,10 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const register = async (req, res) => {
     try {
-        const { fullname, email, phoneNumber, password, role } = req.body;
+        const { fullname, email, phoneNumber, password } = req.body;
 
-        if (!fullname || !email || !phoneNumber || !password || !role) {
+        // Do not trust `role` from the client. Assign server-side below.
+        if (!fullname || !email || !phoneNumber || !password) {
             return res.status(400).json({
                 message: "Something is missing",
                 success: false
@@ -40,12 +41,14 @@ export const register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Force public registrations to be regular students to prevent
+        // client-controlled privilege escalation (do NOT trust req.body.role)
         const newUser = await User.create({
             fullname,
             email,
             phoneNumber,
             password: hashedPassword,
-            role,
+            role: 'student', // assigned server-side
             profile: {
                 profilePhoto,
             }
