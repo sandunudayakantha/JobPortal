@@ -79,7 +79,7 @@ export const updateCompany = async (req, res) => {
         if (file) {
             try {
                 const { detectFileType } = await import('../middlewares/mutler.js');
-                const detected = detectFileType(file.buffer);
+                const detected = await detectFileType(file.buffer);
                 if (!['jpeg','png','gif','webp'].includes(detected)) {
                     return res.status(400).json({ message: 'Invalid file type for logo. Only images are allowed.', success: false });
                 }

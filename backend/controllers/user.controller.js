@@ -25,7 +25,7 @@ export const register = async (req, res) => {
             // Validate buffer-based file type before sending to Cloudinary
             try {
                 const { detectFileType } = await import('../middlewares/mutler.js');
-                const detected = detectFileType(req.file.buffer);
+                const detected = await detectFileType(req.file.buffer);
                 if (!['jpeg','png','gif','webp'].includes(detected)) {
                     return res.status(400).json({ message: 'Invalid file type for profile photo. Only images are allowed.', success: false });
                 }
@@ -184,7 +184,7 @@ export const updateProfile = async (req, res) => {
             // Validate buffer-based file type before processing as resume
             try {
                 const { detectFileType } = await import('../middlewares/mutler.js');
-                const detected = detectFileType(file.buffer);
+                const detected = await detectFileType(file.buffer);
                 // accept pdf, doc, docx for resumes
                 if (!['pdf','doc','docx'].includes(detected)) {
                     return res.status(400).json({ message: 'Invalid file type for resume. Only PDF or Word documents are allowed.', success: false });
