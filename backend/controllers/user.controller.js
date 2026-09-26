@@ -22,12 +22,19 @@ export const register = async (req, res) => {
 
         let profilePhoto = "";
         if (req.file) {
+            // Validate buffer-based file type before sending to Cloudinary
             try {
+                const { detectFileType } = await import('../middlewares/mutler.js');
+                const detected = detectFileType(req.file.buffer);
+                if (!['jpeg','png','gif','webp'].includes(detected)) {
+                    return res.status(400).json({ message: 'Invalid file type for profile photo. Only images are allowed.', success: false });
+                }
                 const fileUri = getDataUri(req.file);
                 const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
                 profilePhoto = cloudResponse.secure_url;
             } catch (uploadError) {
                 console.warn("Cloudinary upload skipped/failed:", uploadError.message);
+                return res.status(400).json({ message: 'Invalid file upload.', success: false });
             }
         }
 
@@ -174,7 +181,19 @@ export const updateProfile = async (req, res) => {
         let cloudResponse;
 
         if (file) {
-            // Only process the file if it's uploaded
+            // Validate buffer-based file type before processing as resume
+            try {
+                const { detectFileType } = await import('../middlewares/mutler.js');
+                const detected = detectFileType(file.buffer);
+                // accept pdf, doc, docx for resumes
+                if (!['pdf','doc','docx'].includes(detected)) {
+                    return res.status(400).json({ message: 'Invalid file type for resume. Only PDF or Word documents are allowed.', success: false });
+                }
+            } catch (e) {
+                console.error('File validation error:', e);
+                return res.status(400).json({ message: 'Invalid file upload.', success: false });
+            }
+
             const fileUri = getDataUri(file); // Convert the file to Data URI
             cloudResponse = await cloudinary.uploader.upload(fileUri.content); // Upload to Cloudinary
         }
