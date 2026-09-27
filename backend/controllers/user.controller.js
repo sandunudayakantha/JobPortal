@@ -10,9 +10,10 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const register = async (req, res) => {
     try {
-        const { fullname, email, phoneNumber, password, role } = req.body;
+        const { fullname, email, phoneNumber, password, inviteCode } = req.body;
 
-        if (!fullname || !email || !phoneNumber || !password || !role) {
+        // Do not trust `role` from the client. Assign server-side below.
+        if (!fullname || !email || !phoneNumber || !password) {
             return res.status(400).json({
                 message: "Something is missing",
                 success: false
@@ -21,12 +22,19 @@ export const register = async (req, res) => {
 
         let profilePhoto = "";
         if (req.file) {
+            // Validate buffer-based file type before sending to Cloudinary
             try {
+                const { detectFileType } = await import('../middlewares/mutler.js');
+                const detected = await detectFileType(req.file.buffer);
+                if (!['jpeg','png','gif','webp'].includes(detected)) {
+                    return res.status(400).json({ message: `Invalid file type for profile photo. Detected: ${detected}. Only images are allowed.`, success: false });
+                }
                 const fileUri = getDataUri(req.file);
                 const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
                 profilePhoto = cloudResponse.secure_url;
             } catch (uploadError) {
                 console.warn("Cloudinary upload skipped/failed:", uploadError.message);
+                return res.status(400).json({ message: 'Invalid file upload.', success: false });
             }
         }
 
@@ -40,12 +48,18 @@ export const register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Determine role based on secret invite code
+        let assignedRole = 'student';
+        if (inviteCode && inviteCode === process.env.RECRUITER_SECRET_KEY) {
+            assignedRole = 'recruiter';
+        }
+
         const newUser = await User.create({
             fullname,
             email,
             phoneNumber,
             password: hashedPassword,
-            role,
+            role: assignedRole, // assigned server-side
             profile: {
                 profilePhoto,
             }
@@ -171,7 +185,19 @@ export const updateProfile = async (req, res) => {
         let cloudResponse;
 
         if (file) {
-            // Only process the file if it's uploaded
+            // Validate buffer-based file type before processing as resume
+            try {
+                const { detectFileType } = await import('../middlewares/mutler.js');
+                const detected = await detectFileType(file.buffer);
+                // accept pdf, doc, docx for resumes
+                if (!['pdf','doc','docx'].includes(detected)) {
+                    return res.status(400).json({ message: 'Invalid file type for resume. Only PDF or Word documents are allowed.', success: false });
+                }
+            } catch (e) {
+                console.error('File validation error:', e);
+                return res.status(400).json({ message: 'Invalid file upload.', success: false });
+            }
+
             const fileUri = getDataUri(file); // Convert the file to Data URI
             cloudResponse = await cloudinary.uploader.upload(fileUri.content); // Upload to Cloudinary
         }

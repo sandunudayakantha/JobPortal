@@ -74,12 +74,27 @@ export const updateCompany = async (req, res) => {
         const { name, description, website, location } = req.body;
  
         const file = req.file;
-        // idhar cloudinary ayega
-        const fileUri = getDataUri(file);
-        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-        const logo = cloudResponse.secure_url;
+        let logo = undefined;
+        // If a file was uploaded, validate its buffer-based type before uploading to Cloudinary
+        if (file) {
+            try {
+                const { detectFileType } = await import('../middlewares/mutler.js');
+                const detected = await detectFileType(file.buffer);
+                if (!['jpeg','png','gif','webp'].includes(detected)) {
+                    return res.status(400).json({ message: 'Invalid file type for logo. Only images are allowed.', success: false });
+                }
+            } catch (e) {
+                console.error('File type validation error:', e);
+                return res.status(400).json({ message: 'Invalid file upload.', success: false });
+            }
+
+            // upload to cloudinary only after validation
+            const fileUri = getDataUri(file);
+            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+            logo = cloudResponse.secure_url;
+        }
     
-        const updateData = { name, description, website, location, logo };
+        const updateData = { name, description, website, location, ...(logo ? { logo } : {}) };
 
         const company = await Company.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
