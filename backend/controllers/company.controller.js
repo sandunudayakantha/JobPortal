@@ -72,29 +72,52 @@ export const getCompanyById = async (req, res) => {
 export const updateCompany = async (req, res) => {
     try {
         const { name, description, website, location } = req.body;
- 
         const file = req.file;
-        // idhar cloudinary ayega
-        const fileUri = getDataUri(file);
-        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-        const logo = cloudResponse.secure_url;
-    
-        const updateData = { name, description, website, location, logo };
 
-        const company = await Company.findByIdAndUpdate(req.params.id, updateData, { new: true });
-
-        if (!company) {
+        // V4 Fix: Prevent IDOR (Insecure Direct Object Reference)
+        // First verify that the company exists
+        const existingCompany = await Company.findById(req.params.id);
+        if (!existingCompany) {
             return res.status(404).json({
                 message: "Company not found.",
                 success: false
-            })
+            });
         }
+
+        // Verify that the authenticated user owns this company
+        if (existingCompany.userId.toString() !== req.id) {
+            return res.status(403).json({
+                message: "Unauthorized: You do not have permission to update this company.",
+                success: false
+            });
+        }
+
+        const updateData = { name, description, website, location };
+
+        // Handle logo upload only if a new file is provided
+        if (file) {
+            const fileUri = getDataUri(file);
+            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+            updateData.logo = cloudResponse.secure_url;
+        }
+
+        const updatedCompany = await Company.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
         return res.status(200).json({
-            message:"Company information updated.",
-            success:true
-        })
+            message: "Company information updated successfully.",
+            company: updatedCompany,
+            success: true
+        });
 
     } catch (error) {
-        console.log(error);
+        console.error("Error updating company:", error);
+        return res.status(500).json({
+            message: "Server error occurred while updating company.",
+            success: false
+        });
     }
-}
+}

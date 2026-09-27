@@ -11,6 +11,7 @@ import jobRoute from "./routes/job.route.js";
 import applicationRoute from "./routes/application.route.js";
 import atsRoutes from "./routes/atsRoutes.js"
 import contactRoutes from "./routes/contactRoutes.js"
+import aiRoute from "./routes/ai.route.js";
 dotenv.config({});
 
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/v1/company", companyRoute);
 app.use("/api/v1/job", jobRoute);
 app.use("/api/v1/application", applicationRoute);
 app.use('/api/contact', contactRoutes);
+app.use("/api/v1/ai", aiRoute);
 
 app.use('/api', atsRoutes);  // This will prefix all ATS routes with /api
 

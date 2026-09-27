@@ -67,16 +67,18 @@ export const register = async (req, res) => {
         };
         const token = await jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
 
+        const isProduction = process.env.NODE_ENV === "production";
         return res.status(201)
             .cookie("token", token, {
                 maxAge: 1 * 24 * 60 * 60 * 1000,
                 httpOnly: true, // Fix for Authentication Cookie Is Readable by JavaScript
-                sameSite: 'none',
-                secure: process.env.NODE_ENV === "production"
+                sameSite: isProduction ? 'none' : 'lax',
+                secure: isProduction
             })
             .json({
                 message: "Account created successfully.",
                 user: userResponse,
+                token,
                 success: true
             });
 
@@ -129,16 +131,18 @@ export const login = async (req, res) => {
             profile: user.profile
         }
 
+        const isProduction = process.env.NODE_ENV === "production";
         return res.status(200)
             .cookie("token", token, {
                 maxAge: 1 * 24 * 60 * 60 * 1000,
                 httpOnly: true, // Fix for V1: Authentication Cookie Is Readable by JavaScript
-                sameSite: 'none',
-                secure: process.env.NODE_ENV === "production"
+                sameSite: isProduction ? 'none' : 'lax',
+                secure: isProduction
             })
             .json({
                 message: `Welcome back ${user.fullname}`,
                 user,
+                token,
                 success: true
             });
     } catch (error) {
@@ -272,16 +276,18 @@ export const googleLogin = async (req, res) => {
             profile: user.profile
         };
 
+        const isProduction = process.env.NODE_ENV === "production";
         return res.status(200)
             .cookie("token", token, {
                 maxAge: 1 * 24 * 60 * 60 * 1000,
                 httpOnly: true,
-                sameSite: 'none',
-                secure: process.env.NODE_ENV === "production"
+                sameSite: isProduction ? 'none' : 'lax',
+                secure: isProduction
             })
             .json({
                 message: `Welcome back ${userResponse.fullname}`,
                 user: userResponse,
+                token,
                 success: true
             });
 
