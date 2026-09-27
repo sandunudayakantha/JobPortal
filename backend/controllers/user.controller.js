@@ -10,7 +10,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const register = async (req, res) => {
     try {
-        const { fullname, email, phoneNumber, password } = req.body;
+        const { fullname, email, phoneNumber, password, inviteCode } = req.body;
 
         // Do not trust `role` from the client. Assign server-side below.
         if (!fullname || !email || !phoneNumber || !password) {
@@ -27,7 +27,7 @@ export const register = async (req, res) => {
                 const { detectFileType } = await import('../middlewares/mutler.js');
                 const detected = await detectFileType(req.file.buffer);
                 if (!['jpeg','png','gif','webp'].includes(detected)) {
-                    return res.status(400).json({ message: 'Invalid file type for profile photo. Only images are allowed.', success: false });
+                    return res.status(400).json({ message: `Invalid file type for profile photo. Detected: ${detected}. Only images are allowed.`, success: false });
                 }
                 const fileUri = getDataUri(req.file);
                 const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
@@ -48,14 +48,18 @@ export const register = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Force public registrations to be regular students to prevent
-        // client-controlled privilege escalation (do NOT trust req.body.role)
+        // Determine role based on secret invite code
+        let assignedRole = 'student';
+        if (inviteCode && inviteCode === process.env.RECRUITER_SECRET_KEY) {
+            assignedRole = 'recruiter';
+        }
+
         const newUser = await User.create({
             fullname,
             email,
             phoneNumber,
             password: hashedPassword,
-            role: 'student', // assigned server-side
+            role: assignedRole, // assigned server-side
             profile: {
                 profilePhoto,
             }
