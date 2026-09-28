@@ -66,13 +66,14 @@ JobLynk is a comprehensive job search platform built with the MERN stack (MongoD
 
 ### Frontend (.env)
 ```
-VITE_API_URL=http://localhost:8000/api/v1
-VITE_GEMINI_API_KEY=your_gemini_api_key
+VITE_BACKEND_URL=http://localhost:8000/api
 ```
 
 ### Backend (.env)
 ```
 PORT=8000
+GEMINI_API_KEY=your_gemini_api_key
+
 MONGODB_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
 CLOUDINARY_NAME=your_cloudinary_name

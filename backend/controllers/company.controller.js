@@ -32,6 +32,7 @@ export const registerCompany = async (req, res) => {
         console.log(error);
     }
 }
+
 export const getCompany = async (req, res) => {
     try {
         const userId = req.id; // logged in user id
@@ -44,12 +45,13 @@ export const getCompany = async (req, res) => {
         }
         return res.status(200).json({
             companies,
-            success:true
+            success: true
         })
     } catch (error) {
         console.log(error);
     }
 }
+
 // get company by id
 export const getCompanyById = async (req, res) => {
     try {
@@ -69,32 +71,73 @@ export const getCompanyById = async (req, res) => {
         console.log(error);
     }
 }
+
 export const updateCompany = async (req, res) => {
     try {
         const { name, description, website, location } = req.body;
- 
         const file = req.file;
-        // idhar cloudinary ayega
-        const fileUri = getDataUri(file);
-        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-        const logo = cloudResponse.secure_url;
-    
-        const updateData = { name, description, website, location, logo };
 
-        const company = await Company.findByIdAndUpdate(req.params.id, updateData, { new: true });
-
-        if (!company) {
+        // Fix for V4: IDOR - Verify the company exists before updating
+        const existingCompany = await Company.findById(req.params.id);
+        if (!existingCompany) {
             return res.status(404).json({
                 message: "Company not found.",
                 success: false
-            })
+            });
         }
+
+        // Fix for V4: IDOR - Verify the authenticated user owns this company
+        if (existingCompany.userId.toString() !== req.id) {
+            return res.status(403).json({
+                message: "Unauthorized: You do not have permission to update this company.",
+                success: false
+            });
+        }
+
+        const updateData = { name, description, website, location };
+
+        // Fix for V5: Unrestricted File Upload - validate file type before uploading
+        if (file) {
+            try {
+                const { detectFileType } = await import('../middlewares/mutler.js');
+                const detected = await detectFileType(file.buffer);
+                if (!['jpeg', 'png', 'gif', 'webp'].includes(detected)) {
+                    return res.status(400).json({
+                        message: 'Invalid file type for logo. Only images are allowed.',
+                        success: false
+                    });
+                }
+            } catch (e) {
+                console.error('File type validation error:', e);
+                return res.status(400).json({
+                    message: 'Invalid file upload.',
+                    success: false
+                });
+            }
+
+            // Upload to Cloudinary only after validation passes
+            const fileUri = getDataUri(file);
+            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+            updateData.logo = cloudResponse.secure_url;
+        }
+
+        const updatedCompany = await Company.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
         return res.status(200).json({
-            message:"Company information updated.",
-            success:true
-        })
+            message: "Company information updated successfully.",
+            company: updatedCompany,
+            success: true
+        });
 
     } catch (error) {
-        console.log(error);
+        console.error("Error updating company:", error);
+        return res.status(500).json({
+            message: "Server error occurred while updating company.",
+            success: false
+        });
     }
 }

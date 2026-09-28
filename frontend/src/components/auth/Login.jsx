@@ -69,6 +69,9 @@ const Login = () => {
                 withCredentials: true,
             });
             if (res.data.success) {
+                if (res.data.token) {
+                    localStorage.setItem('token', res.data.token);
+                }
                 dispatch(setUser(res.data.user));
                 successToast(res.data.message || 'Successfully logged in!');
                 if (res.data.user.role === 'recruiter') {
@@ -93,6 +96,9 @@ const Login = () => {
                 withCredentials: true,
             });
             if (res.data.success) {
+                if (res.data.token) {
+                    localStorage.setItem('token', res.data.token);
+                }
                 dispatch(setUser(res.data.user));
                 successToast(res.data.message || 'Successfully logged in with Google!');
                 if (res.data.user.role === 'recruiter') {

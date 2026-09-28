@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { analyzeResume } from '../controllers/atsController.js';
+import { atsLimiter } from '../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
@@ -25,11 +26,12 @@ const upload = multer({
 
 // Add logging middleware
 router.use((req, res, next) => {
-//   console.log(`${req.method} ${req.url}`);
+  //   console.log(`${req.method} ${req.url}`);
   next();
 });
 
-router.post('/analyze-resume', 
+router.post('/analyze-resume',
+  atsLimiter,
   (req, res, next) => {
     upload.single('resume')(req, res, (err) => {
       if (err instanceof multer.MulterError) {

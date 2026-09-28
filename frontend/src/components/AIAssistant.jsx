@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// Initialize the Gemini AI client
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY);
+import axios from 'axios';
+import { AI_API_END_POINT } from '@/utils/constant';
 
 const INITIAL_MESSAGE = "Hello! I'm JobLynk's AI assistant. How can I help you with job searching or career advice?";
 
@@ -31,33 +28,50 @@ const AIAssistant = () => {
   const handleSend = async () => {
     if (input.trim() === '') return;
 
-    setMessages(prev => [...prev, { text: input, sender: 'user' }]);
+    const userInput = input.trim();
+    setMessages(prev => [...prev, { text: userInput, sender: 'user' }]);
     setInput('');
     setIsLoading(true);
     setIsTyping(true);
 
     try {
-      if (!API_KEY) throw new Error("API key is not set");
+      const token = localStorage.getItem('token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
-      const model = genAI.getGenerativeModel({ model: "gemini-pro"});
-      const prompt = `You are a concise AI assistant for JobLynk, a job search platform. Respond to this question in 2-3 short sentences: ${input}`;
-      
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const aiMessage = response.text();
+      const res = await axios.post(
+        `${AI_API_END_POINT}/chat`,
+        {
+          prompt: userInput,
+          systemInstruction: "You are a concise AI assistant for JobLynk, a job search platform. Respond to this question in 2-3 short sentences."
+        },
+        { 
+          headers,
+          withCredentials: true 
+        }
+      );
+
+      const aiMessage = res.data.text;
 
       setTimeout(() => {
         setMessages(prev => [...prev, { text: aiMessage, sender: 'ai' }]);
         setIsTyping(false);
-      }, 500);
+      }, 300);
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, { text: "Sorry, I can't respond right now. Try again later.", sender: 'ai' }]);
+      const errorMsg =
+        error.response?.status === 401
+          ? "Please log in to your account to chat with the AI assistant."
+          : (error.response?.data?.message || "Sorry, I can't respond right now. Please try again later.");
+      setMessages(prev => [...prev, { text: errorMsg, sender: 'ai' }]);
       setIsTyping(false);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const Message = ({ msg }) => (
     <div className={`flex items-start space-x-2 mb-3 sm:mb-4 ${msg.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>

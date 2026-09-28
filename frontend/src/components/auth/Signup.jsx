@@ -20,7 +20,7 @@ const Signup = () => {
         email: "",
         phoneNumber: "",
         password: "",
-        role: "",
+        inviteCode: "",
         file: null
     });
 
@@ -39,8 +39,6 @@ const Signup = () => {
                 return !value.match(/^\d{10}$/) ? 'Invalid phone number (10 digits required)' : '';
             case 'password':
                 return value.length < 6 ? 'Password must be at least 6 characters' : '';
-            case 'role':
-                return value === '' ? 'Please select a role' : '';
             case 'file':
                 return !value ? 'Profile picture is required' : '';
             default:
@@ -93,7 +91,9 @@ const Signup = () => {
         formData.append("email", input.email);
         formData.append("phoneNumber", input.phoneNumber);
         formData.append("password", input.password);
-        formData.append("role", input.role);
+        if (input.inviteCode) {
+            formData.append("inviteCode", input.inviteCode);
+        }
         if (input.file) {
             formData.append("file", input.file);
         }
@@ -250,77 +250,48 @@ const Signup = () => {
                                             </p>
                                         </div>
 
-                                        <div className='space-y-2'>
-                                            <Label className='text-gray-700 dark:text-gray-300'>Select Role</Label>
-                                            <div className='grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3'>
-                                                <div
-                                                    onClick={() => handleInputChange({ target: { name: 'role', value: 'student' } })}
-                                                    className={cn(
-                                                        'p-4 rounded-lg border-2 cursor-pointer transition-all',
-                                                        input.role === 'student'
-                                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
-                                                            : 'border-gray-200 hover:border-indigo-200'
-                                                    )}
-                                                >
-                                                    <div className='flex items-center justify-between'>
-                                                        <div>
-                                                            <p className='font-medium'>Student</p>
-                                                            <p className='text-xs text-gray-500'>Looking for opportunities</p>
-                                                        </div>
-                                                        {input.role === 'student' && (
-                                                            <CheckCircle2 className='text-indigo-500' size={20} />
-                                                        )}
-                                                    </div>
-                                                </div>
+                                        <div>
+                                            <Label htmlFor='inviteCode' className='text-gray-700 dark:text-gray-300'>Recruiter Invite Code (Optional)</Label>
+                                            <div className='relative mt-1'>
+                                                <Input
+                                                    id='inviteCode'
+                                                    name='inviteCode'
+                                                    type='text'
+                                                    className='w-full'
+                                                    value={input.inviteCode}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter code to register as recruiter"
+                                                />
+                                            </div>
+                                        </div>
 
-                                                <div
-                                                    onClick={() => handleInputChange({ target: { name: 'role', value: 'recruiter' } })}
-                                                    className={cn(
-                                                        'p-4 rounded-lg border-2 cursor-pointer transition-all',
-                                                        input.role === 'recruiter'
-                                                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
-                                                            : 'border-gray-200 hover:border-purple-200'
+                                        <div className='space-y-2 flex flex-col items-center pt-2'>
+                                            <Label className='text-gray-700 dark:text-gray-300 mb-2'>Profile Photo (Optional)</Label>
+                                            <div className='flex justify-center'>
+                                                <div className='relative group'>
+                                                    <div className={cn(
+                                                        'w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 hover:border-indigo-500 transition-colors',
+                                                        errors.file && 'border-red-500'
+                                                    )}>
+                                                        {previewUrl ? (
+                                                            <img src={previewUrl} alt="Profile preview" className='w-full h-full object-cover' />
+                                                        ) : (
+                                                            <div className='w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center'>
+                                                                <Upload className='w-8 h-8 text-gray-400' />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <input
+                                                        type="file"
+                                                        onChange={handleFileChange}
+                                                        className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
+                                                        accept="image/*"
+                                                    />
+                                                    {errors.file && (
+                                                        <p className='text-red-500 text-xs mt-1 text-center'>{errors.file}</p>
                                                     )}
-                                                >
-                                                    <div className='flex items-center justify-between'>
-                                                        <div>
-                                                            <p className='font-medium'>Recruiter</p>
-                                                            <p className='text-xs text-gray-500'>Hiring talent</p>
-                                                        </div>
-                                                        {input.role === 'recruiter' && (
-                                                            <CheckCircle2 className='text-purple-500' size={20} />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                 <div className='flex justify-center col-span-2 sm:col-span-1'>
-                                                    <div className='relative group'>
-                                                        <div className={cn(
-                                                            'w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 hover:border-indigo-500 transition-colors',
-                                                            errors.file && 'border-red-500'
-                                                        )}>
-                                                            {previewUrl ? (
-                                                                <img src={previewUrl} alt="Profile preview" className='w-full h-full object-cover' />
-                                                            ) : (
-                                                                <div className='w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center'>
-                                                                    <Upload className='w-8 h-8 text-gray-400' />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <input
-                                                            type="file"
-                                                            onChange={handleFileChange}
-                                                            className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
-                                                            accept="image/*"
-                                                        />
-                                                        {errors.file && (
-                                                            <p className='text-red-500 text-xs mt-1 text-center'>{errors.file}</p>
-                                                        )}
-                                                    </div>
                                                 </div>
                                             </div>
-                                            {errors.role && (
-                                                <p className='text-red-500 text-xs mt-1'>{errors.role}</p>
-                                            )}
                                         </div>
 
                                         <div className="flex items-start space-x-2">
