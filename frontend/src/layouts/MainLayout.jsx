@@ -4,17 +4,16 @@ import { useSelector } from 'react-redux';
 import Navbar from '../components/shared/Navbar';
 import FloatingActions from '../components/FloatingActions';
 import Footer from '../components/shared/Footer';
+import AIAssistant from '../components/AIAssistant';
+
 const MainLayout = ({ children }) => {
   const location = useLocation();
   const { user } = useSelector(store => store.auth);
 
-  // Don't show floating actions on admin pages or login/signup pages
+  // Don't show floating actions or chat on login/signup pages
   const hideOnPaths = [
-    '/admin',
     '/login',
-    '/signup',
-    '/resume-builder',
-    '/ats-score'
+    '/signup'
   ];
 
   // Check if current path starts with any of the hide paths
@@ -34,10 +33,12 @@ const MainLayout = ({ children }) => {
           {children}
         </Suspense>
       </div>
-      {!shouldHideActions && user?.role !== 'recruiter' && <FloatingActions />}
+      {!shouldHideActions && <FloatingActions />}
+      {!shouldHideActions && location.pathname !== '/ai-assistant' && <AIAssistant />}
       <Footer />
     </div>
   );
 };
 
-export default MainLayout; 
+export default MainLayout;
+ 
