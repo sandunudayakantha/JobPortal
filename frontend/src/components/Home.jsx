@@ -5,7 +5,6 @@ import HowItWorks from './HowItWorks'
 import CategoryCarousel from './CategoryCarousel'
 import LatestJobs from './LatestJobs'
 import TestimonialsSection from './TestimonialsSection'
-import AIAssistant from './AIAssistant'
 import useGetAllJobs from '@/hooks/useGetAllJobs'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
@@ -102,17 +101,6 @@ const Home = () => {
       <motion.div variants={sectionVariants}>
         <TestimonialsSection />
       </motion.div>
-
-      {/* Fixed Position AI Assistant */}
-      <div className="fixed bottom-4 right-4 z-50">
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1, type: "spring" }}
-        >
-          <AIAssistant />
-        </motion.div>
-      </div>
 
       {/* Additional Decorative Elements */}
       <div className="absolute inset-0 pointer-events-none">
