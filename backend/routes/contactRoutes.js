@@ -1,17 +1,18 @@
 import express from 'express';
 import { sendContactEmail } from '../utils/emailService.js';
+import { contactLimiter } from '../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
-router.post('/submit', async (req, res) => {
+router.post('/submit', contactLimiter, async (req, res) => {
   try {
     const { name, email, message } = req.body;
-    
+
     // Validate input
     if (!name || !email || !message) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'All fields are required' 
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
       });
     }
 
@@ -30,12 +31,12 @@ router.post('/submit', async (req, res) => {
     const sanitizedMessage = message.trim().slice(0, 1000);
 
     // Send email
-    const emailResult = await sendContactEmail({ 
-      name: sanitizedName, 
-      email: sanitizedEmail, 
-      message: sanitizedMessage 
+    const emailResult = await sendContactEmail({
+      name: sanitizedName,
+      email: sanitizedEmail,
+      message: sanitizedMessage
     });
-    
+
     if (emailResult.success) {
       res.status(200).json(emailResult);
     } else {
@@ -43,9 +44,9 @@ router.post('/submit', async (req, res) => {
     }
   } catch (error) {
     console.error('Contact form server error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error processing contact form' 
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error processing contact form'
     });
   }
 });
